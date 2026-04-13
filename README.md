@@ -25,3 +25,5 @@ the goal of the game is to build your list which is done randomly through using 
  1. in Melee you roll to hit, if you beat your opponent's armor score, you hit. then you roll damage. you total out the score on the dice, saving as many as possible. put those damage dice by the miniature to allocate damage.
 
 if a character takes all the damage it can, it dies. remove it from the board.
+
+a character may attempt to role a save. when they do, if they roll higher than the number on the stat sheet, they can remove one dice worth of damage on that character. example: if my guard saves on 5+; and I'm hit with a 2, 3, and 6 for damage, if I roll a 4+ on my save, I roll that dice again and can negate that much damage. 
