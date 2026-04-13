@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Board Game Team Builder</title>
+
+<style>
+  body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+    text-align: center;
+  }
+
+  button {
+    padding: 10px 20px;
+    margin: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+
+  #team {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .unit {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    margin: 10px;
+    padding: 10px;
+    width: 260px;
+    border-radius: 10px;
+    text-align: left;
+  }
+
+  .common { color: #ccc; }
+  .rare { color: #4da6ff; }
+  .epic { color: #b84dff; }
+  .legendary { color: gold; }
+</style>
+</head>
+
+<body>
+
+<h1>⚔️ Team Builder</h1>
+
+<div id="selection">
+  <h2>Choose Your Side</h2>
+  <button onclick="startGame('human')">Humans</button>
+  <button onclick="startGame('monster')">Monsters</button>
+</div>
+
+<div id="game" style="display:none;">
+  <h2 id="mode"></h2>
+  <button onclick="generateTeam()">Generate</button>
+  <div id="team"></div>
+</div>
+
+<script>
+
+// ================= HUMAN UNITS =================
+const humans = [
+{ name:"Spearman", rarity:"common", hp:26, atk:3, hit:"4+", save:"5+", spd:"+1",
+ability:"Arcane Thrust: 2 range hits on 3+",
+trait:"Split attacks between targets" },
+
+{ name:"Guard", rarity:"common", hp:30, atk:2, hit:"4+", save:"4+", spd:"0",
+ability:"Hold the Line: 3+ save",
+trait:"+1 save to adjacent allies" },
+
+{ name:"Rogue", rarity:"common", hp:24, atk:3, hit:"3+", save:"6+", spd:"+3",
+ability:"Move 3 after attacking",
+trait:"Enemies -1 to hit" },
+
+{ name:"Mage", rarity:"rare", hp:24, atk:4, hit:"4+", save:"6+", spd:"0",
+ability:"AoE attack",
+trait:"6s add extra hit" },
+
+{ name:"Swordbrute", rarity:"rare", hp:36, atk:3, hit:"4+", save:"3+", spd:"-1",
+ability:"+2 dice but hit 5+",
+trait:"Ignore first failed save" },
+
+{ name:"Mage Knight", rarity:"rare", hp:32, atk:3, hit:"3+", save:"4+", spd:"0",
+ability:"Choose melee buff or ranged",
+trait:"Reroll 1 save" },
+
+{ name:"Paladin of the Sun", rarity:"rare", hp:34, atk:3, hit:"4+", save:"3+", spd:"0",
+ability:"Heal 2d6",
+trait:"Reflect 1 damage" },
+
+{ name:"Sword Master", rarity:"epic", hp:30, atk:5, hit:"3+", save:"3+", spd:"+1",
+ability:"Attack twice",
+trait:"2+ hit if stationary" },
+
+{ name:"Inquisitor", rarity:"epic", hp:32, atk:4, hit:"3+", save:"3+", spd:"+1",
+ability:"+2 dice vs monsters",
+trait:"Reduce monster effects" },
+
+{ name:"Lord of Justice", rarity:"epic", hp:30, atk:4, hit:"3+", save:"4+", spd:"+2",
+ability:"Ally attacks instantly",
+trait:"Reroll 1 hit for allies" },
+
+{ name:"Son of the Tempest", rarity:"legendary", hp:36, atk:5, hit:"3+", save:"3+", spd:"+2",
+ability:"Double attack or split",
+trait:"6s chain hits, 1 hurts self" }
+];
+
+// ================= MONSTERS =================
+const monsters = [
+{ name:"Giant Carapace King", rarity:"legendary", hp:55, atk:6, hit:"4+", save:"2+", spd:"-1",
+ability:"AoE crush attack",
+trait:"Reduce incoming dice, cannot die in one turn" },
+
+{ name:"Shadowform", rarity:"epic", hp:28, atk:4, hit:"3+", save:"5+", spd:"+4",
+ability:"6s ignore saves",
+trait:"Ignore first hit each turn" },
+
+{ name:"Traitor Mage", rarity:"rare", hp:34, atk:4, hit:"3+", save:"4+", spd:"+2",
+ability:"Extra hit rolls",
+trait:"Reflect damage on 1" },
+
+{ name:"Berserker", rarity:"rare", hp:40, atk:5, hit:"4+", save:"3+", spd:"+1",
+ability:"Gain dice when hit",
+trait:"Cannot be slowed" },
+
+{ name:"Crawler", rarity:"common", hp:30, atk:3, hit:"4+", save:"5+", spd:"+5",
+ability:"+2 dice if same target",
+trait:"Ignores terrain" },
+
+{ name:"Banshee", rarity:"rare", hp:28, atk:4, hit:"4+", save:"5+", spd:"+2",
+ability:"-1 enemy hit",
+trait:"Ignores armor buffs" },
+
+{ name:"Banshee Queen", rarity:"epic", hp:36, atk:6, hit:"4+", save:"4+", spd:"+2",
+ability:"AoE scream",
+trait:"+1 damage on failed saves" },
+
+{ name:"Purgemaster Bart", rarity:"epic", hp:38, atk:5, hit:"3+", save:"3+", spd:"+1",
+ability:"+2 dice vs low HP",
+trait:"Reroll failed hits" }
+];
+
+// ================= SYSTEM =================
+const weights = { common:50, rare:25, epic:15, legendary:10 };
+let pool = [];
+let mode = "";
+
+// ================= START =================
+function startGame(type){
+  document.getElementById("selection").style.display="none";
+  document.getElementById("game").style.display="block";
+
+  mode = type;
+  pool = type === "human" ? humans : monsters;
+
+  document.getElementById("mode").innerText =
+    type === "human" ? "🧍 Human Team" : "👹 Monster Team";
+}
+
+// ================= RANDOM =================
+function getUnit(){
+  let total = 100;
+  let r = Math.random()*total;
+
+  for(let key in weights){
+    if(r < weights[key]){
+      let filtered = pool.filter(u=>u.rarity===key);
+      if(filtered.length===0) continue;
+      return filtered[Math.floor(Math.random()*filtered.length)];
+    }
+    r -= weights[key];
+  }
+}
+
+// ================= GENERATE =================
+function generateTeam(){
+  const div = document.getElementById("team");
+  div.innerHTML="";
+
+  let team = [];
+  let size = mode === "human" ? 5 : 3;
+
+  while(team.length < size){
+    let u = getUnit();
+    if(!u) continue;
+
+    if(!team.find(x=>x.name===u.name)){
+      team.push(u);
+    }
+  }
+
+  // Boss Rule
+  if(mode==="monster"){
+    let hasLegend = team.find(u=>u.rarity==="legendary");
+    if(hasLegend) team = [hasLegend];
+  }
+
+  team.forEach(u=>{
+    let el = document.createElement("div");
+    el.className = "unit "+u.rarity;
+
+    el.innerHTML = `
+      <h3>${u.name}</h3>
+      <b>${u.rarity.toUpperCase()}</b><br>
+      HP: ${u.hp} <br>
+      ATK Dice: ${u.atk} <br>
+      Hit: ${u.hit} | Save: ${u.save} <br>
+      Speed: ${u.spd} <br><br>
+      <b>Ability:</b> ${u.ability}<br>
+      <b>Trait:</b> ${u.trait}
+    `;
+
+    div.appendChild(el);
+  });
+}
+
+</script>
+
+</body>
+</html>
